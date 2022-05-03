@@ -1,6 +1,6 @@
 {
    "name": "@scrypted/merakimt",
-   "version": "0.0.1",
+   "version": "0.0.2",
    "description": "Meraki MT (Sensors) plugin for Scrypted",
    "Author": "Billy Zoellers",
    "License": "Apache",
@@ -24,6 +24,7 @@
    },
    "dependencies": {
       "@types/node": "^16.6.1",
+      "async-mqtt": "^2.6.2",
       "axios": "^0.24.0"
    },
    "devDependencies": {

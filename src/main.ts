@@ -1,14 +1,72 @@
 import axios, { AxiosRequestConfig } from 'axios'
 import sdk, { Device, DeviceInformation, ScryptedDeviceBase, DeviceProvider, ScryptedDeviceType, Thermometer, HumiditySensor, Settings, Setting, ScryptedInterface, Refresh, TemperatureUnit, AirQuality, Battery, FloodSensor, BinarySensor, AirQualitySensor, PM25Sensor, VOCSensor} from '@scrypted/sdk';
 const { deviceManager, log } = sdk;
+const MQTT = require("async-mqtt");
+import { AsyncMqttClient } from 'async-mqtt';
+
+function iaqIndexToAirQuality(iaqIndex: number) {
+  if (iaqIndex > 92)
+    return AirQuality.Excellent;
+  else if (iaqIndex > 79)
+    return AirQuality.Good;
+  else if (iaqIndex > 59)
+    return AirQuality.Fair;
+  else if (iaqIndex > 39)
+    return AirQuality.Poor;
+  else if (iaqIndex > 19)
+    return AirQuality.Inferior;
+  
+  return AirQuality.Unknown;
+}
 
 class MerakiMT extends ScryptedDeviceBase implements Battery, HumiditySensor, Thermometer, FloodSensor, BinarySensor, AirQualitySensor, PM25Sensor, VOCSensor {
   device: any;
   provider: MerakiMTController;
+  mac: string;
+  mqtt: AsyncMqttClient;
 
-  constructor(nativeId: string, provider: MerakiMTController) {
+  constructor(nativeId: string, provider: MerakiMTController, mac: string) {
     super(nativeId);
     this.provider = provider;
+    this.mac = mac;
+
+    this.mqtt = MQTT.connect("mqtt://localhost:1883", {
+      clientId: `merakimt/${this.nativeId}`
+    });
+
+    this.mqtt.on("connect", async () => {
+      console.log("Starting MQTT ");
+      this.mqtt.on('message', (topic, message) => {
+        const metric = topic.split('/')[6];
+        const json = JSON.parse(message.toString());
+        this.console.log(metric, json);
+
+        switch (metric) {
+          case "door":
+            this.binaryState = json.open;
+            break;
+          case "batteryPercentage":
+            this.batteryLevel = json.batteryPercentage;
+            break;
+          case "waterDetection":
+            this.flooded = json.wet;
+            break;
+          case "temperature":
+            this.temperature = json.celsius;
+            break;
+          case "humidity":
+            this.humidity = json.humidity;
+            break;
+          case "iaqIndex":
+            this.airQuality = iaqIndexToAirQuality(json.iaqIndex);
+            break;
+        }
+
+        
+      });
+
+      await this.mqtt.subscribe(`meraki/v1/mt/${this.provider.storage.getItem("network_id")}/ble/${this.mac.toUpperCase()}/+`);
+    });
   }
 
   setTemperatureUnit(temperatureUnit: TemperatureUnit): Promise<void> {
@@ -57,18 +115,7 @@ class MerakiMTController extends ScryptedDeviceBase implements DeviceProvider, S
                     device.binaryState = reading.door.open;
                     break;
                 case "indoorAirQuality":
-                    if (reading.indoorAirQuality.score > 92)
-                        device.airQuality = AirQuality.Excellent;
-                    else if (reading.indoorAirQuality.score > 79)
-                        device.airQuality = AirQuality.Good;
-                    else if (reading.indoorAirQuality.score > 59)
-                        device.airQuality = AirQuality.Fair;
-                    else if (reading.indoorAirQuality.score > 39)
-                        device.airQuality = AirQuality.Poor;
-                    else if (reading.indoorAirQuality.score > 19)
-                        device.airQuality = AirQuality.Inferior;
-                    else
-                        device.airQuality = AirQuality.Unknown;
+                    device.airQuality = iaqIndexToAirQuality(reading.indoorAirQuality.score);
                     break;
                 case "tvoc":
                     device.vocDensity = reading.tvoc.concentration;
@@ -134,6 +181,7 @@ class MerakiMTController extends ScryptedDeviceBase implements DeviceProvider, S
     const resp = await this.req(url)
 
     const devices: Device[] = [];
+    const deviceSNtoMAC = {};
     for (let dev of resp) {
         this.console.log(` Discovered ${dev.name} ${dev.serial} ${dev.mac} ${dev.model} ${dev.sensor.metrics}`)
     
@@ -177,6 +225,7 @@ class MerakiMTController extends ScryptedDeviceBase implements DeviceProvider, S
         }
 
         devices.push(device)
+        deviceSNtoMAC[dev.serial] = dev.mac;
     }
     
     // Sync device list
@@ -187,7 +236,7 @@ class MerakiMTController extends ScryptedDeviceBase implements DeviceProvider, S
     for (let device of devices) {
         let providerDevice = this.devices.get(device.nativeId);
         if (!providerDevice) {
-            providerDevice = new MerakiMT(device.nativeId, this);
+            providerDevice = new MerakiMT(device.nativeId, this, deviceSNtoMAC[device.nativeId]);
             this.devices.set(device.nativeId, providerDevice);
         }
     }
