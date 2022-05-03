@@ -1,0 +1,33 @@
+{
+   "name": "@scrypted/merakimt",
+   "version": "0.0.1",
+   "description": "Meraki MT (Sensors) plugin for Scrypted",
+   "Author": "Billy Zoellers",
+   "License": "Apache",
+   "scripts": {
+      "prepublishOnly": "NODE_ENV=production scrypted-webpack",
+      "prescrypted-vscode-launch": "scrypted-webpack",
+      "scrypted-vscode-launch": "scrypted-deploy-debug",
+      "scrypted-deploy-debug": "scrypted-deploy-debug",
+      "scrypted-debug": "scrypted-debug",
+      "scrypted-deploy": "scrypted-deploy",
+      "scrypted-webpack": "scrypted-webpack"
+   },
+   "scrypted": {
+      "name": "Meraki MT Plugin",
+      "singleInstance": true,
+      "type": "DeviceProvider",
+      "interfaces": [
+         "DeviceProvider",
+         "Settings"
+      ]
+   },
+   "dependencies": {
+      "@types/node": "^16.6.1",
+      "axios": "^0.24.0"
+   },
+   "devDependencies": {
+      "@scrypted/sdk": "^0.0.195",
+      "webpack-bundle-analyzer": "^4.5.0"
+   }
+}
