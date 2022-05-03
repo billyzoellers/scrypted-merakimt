@@ -30,16 +30,16 @@ class MerakiMT extends ScryptedDeviceBase implements Battery, HumiditySensor, Th
     this.provider = provider;
     this.mac = mac;
 
-    this.mqtt = MQTT.connect("mqtt://localhost:1883", {
+    this.mqtt = MQTT.connect(provider.storage.getItem("mqtt_broker") || "mqtt://localhost:1883", {
       clientId: `merakimt/${this.nativeId}`
     });
 
     this.mqtt.on("connect", async () => {
-      console.log("Starting MQTT ");
+      this.console.log(`[${this.nativeId}] Starting MQTT`);
       this.mqtt.on('message', (topic, message) => {
         const metric = topic.split('/')[6];
         const json = JSON.parse(message.toString());
-        this.console.log(metric, json);
+        this.console.log(`[${this.nativeId}] `, metric, json);
 
         switch (metric) {
           case "door":
@@ -99,7 +99,6 @@ class MerakiMTController extends ScryptedDeviceBase implements DeviceProvider, S
         for (let reading of dev.readings) {
             switch (reading.metric) {
                 case "battery":
-                    // device.batteryPercentage = reading.battery.percentage;
                     device.batteryLevel = reading.battery.percentage;
                     break;
                 case "temperature":
@@ -148,6 +147,12 @@ class MerakiMTController extends ScryptedDeviceBase implements DeviceProvider, S
         description: "Meraki network ID",
         value: this.storage.getItem("network_id"),
       },
+      {
+        title: "MQTT Broker",
+        key: "mqtt_broker",
+        description: "MQTT Broker",
+        value: this.storage.getItem("mqtt_broker") || "mqtt://localhost:1883",
+      }
     ]
   }
 
@@ -183,7 +188,7 @@ class MerakiMTController extends ScryptedDeviceBase implements DeviceProvider, S
     const devices: Device[] = [];
     const deviceSNtoMAC = {};
     for (let dev of resp) {
-        this.console.log(` Discovered ${dev.name} ${dev.serial} ${dev.mac} ${dev.model} ${dev.sensor.metrics}`)
+        this.console.log(`[Meraki MT Plugin] Discovered ${dev.name} (${dev.model}) ${dev.mac} ${dev.sensor.metrics}`)
     
         const interfaces: ScryptedInterface[] = []
 
@@ -203,11 +208,13 @@ class MerakiMTController extends ScryptedDeviceBase implements DeviceProvider, S
         if (dev.sensor.metrics.includes("tvoc"))
             interfaces.push(ScryptedInterface.VOCSensor);
 
+        // Do not create devices if no interfaces are supported
         if (interfaces.length === 0) {
-            this.console.log(" No interfaces matched.")
+            this.console.log(`[Meraki MT Plugin] ${dev.serial} No interfaces matched.`)
             continue;
         }
 
+        // All MT devices support Battery
         interfaces.push(ScryptedInterface.Battery);
 
         const info: DeviceInformation = {
