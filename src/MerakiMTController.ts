@@ -10,24 +10,13 @@ import sdk, {
   Setting,
   ScryptedInterface,
   Refresh,
-  AirQuality,
 } from '@scrypted/sdk';
 // eslint-disable-next-line import/no-unresolved, import/extensions
 import MerakiMT from './MerakiMT';
 
 const { deviceManager } = sdk;
 
-export function iaqIndexToAirQuality(iaqIndex: number) {
-  if (iaqIndex > 92) return AirQuality.Excellent;
-  if (iaqIndex > 79) return AirQuality.Good;
-  if (iaqIndex > 59) return AirQuality.Fair;
-  if (iaqIndex > 39) return AirQuality.Poor;
-  if (iaqIndex > 19) return AirQuality.Inferior;
-
-  return AirQuality.Unknown;
-}
-
-export class MerakiMTController extends ScryptedDeviceBase
+export default class MerakiMTController extends ScryptedDeviceBase
   implements DeviceProvider, Settings, Refresh {
   devices = new Map<string, any>();
 
@@ -47,7 +36,7 @@ export class MerakiMTController extends ScryptedDeviceBase
     const resp = await this.req(url);
 
     resp.forEach((dev) => {
-      const device: ScryptedDeviceBase = this.getDevice(dev.serial);
+      const device: MerakiMT = this.getDevice(dev.serial);
 
       // Ignore non-existant devices
       if (!device) return;
@@ -73,7 +62,7 @@ export class MerakiMTController extends ScryptedDeviceBase
             device.binaryState = reading.door.open;
             break;
           case 'indoorAirQuality':
-            device.airQuality = iaqIndexToAirQuality(reading.indoorAirQuality.score);
+            device.setAirQualityFromIndex(reading.indoorAirQuality.score);
             break;
           case 'tvoc':
             device.vocDensity = reading.tvoc.concentration;

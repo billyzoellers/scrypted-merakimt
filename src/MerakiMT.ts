@@ -14,19 +14,9 @@ import {
 } from '@scrypted/sdk';
 import { AsyncMqttClient } from 'async-mqtt';
 // eslint-disable-next-line import/no-unresolved, import/extensions
-import { MerakiMTController } from './MerakiMTController';
+import MerakiMTController from './MerakiMTController';
 
 const MQTT = require('async-mqtt');
-
-function iaqIndexToAirQuality(iaqIndex: number) {
-  if (iaqIndex > 92) return AirQuality.Excellent;
-  if (iaqIndex > 79) return AirQuality.Good;
-  if (iaqIndex > 59) return AirQuality.Fair;
-  if (iaqIndex > 39) return AirQuality.Poor;
-  if (iaqIndex > 19) return AirQuality.Inferior;
-
-  return AirQuality.Unknown;
-}
 
 export default class MerakiMT extends ScryptedDeviceBase
   implements Battery, HumiditySensor, Thermometer, FloodSensor, BinarySensor,
@@ -72,7 +62,7 @@ export default class MerakiMT extends ScryptedDeviceBase
             this.humidity = json.humidity;
             break;
           case 'iaqIndex':
-            this.airQuality = iaqIndexToAirQuality(json.iaqIndex);
+            this.setAirQualityFromIndex(json.iaqIndex);
             break;
           default:
             break;
@@ -85,5 +75,14 @@ export default class MerakiMT extends ScryptedDeviceBase
 
   setTemperatureUnit(temperatureUnit: TemperatureUnit): Promise<void> {
     throw new Error(`[${this.nativeId}]: setTemperatureUnit ${temperatureUnit}. Not implemented.`);
+  }
+
+  setAirQualityFromIndex(iaqIndex: number) {
+    if (iaqIndex > 92) this.airQuality = AirQuality.Excellent;
+    else if (iaqIndex > 79) this.airQuality = AirQuality.Good;
+    else if (iaqIndex > 59) this.airQuality = AirQuality.Fair;
+    else if (iaqIndex > 39) this.airQuality = AirQuality.Poor;
+    else if (iaqIndex > 19) this.airQuality = AirQuality.Inferior;
+    else this.airQuality = AirQuality.Unknown;
   }
 }
