@@ -35,11 +35,11 @@ class MerakiMT extends ScryptedDeviceBase implements Battery, HumiditySensor, Th
     });
 
     this.mqtt.on("connect", async () => {
-      this.console.log(`[${this.nativeId}] Starting MQTT`);
+      this.console.log(`[${this.nativeId}] MQTT started`);
       this.mqtt.on('message', (topic, message) => {
         const metric = topic.split('/')[6];
         const json = JSON.parse(message.toString());
-        this.console.log(`[${this.nativeId}] `, metric, json);
+        this.console.log(`[${this.nativeId}] MQTT:`, metric, json);
 
         switch (metric) {
           case "door":
@@ -94,9 +94,11 @@ class MerakiMTController extends ScryptedDeviceBase implements DeviceProvider, S
         const device: ScryptedDeviceBase = this.getDevice(dev.serial)
         if (!device)
             continue
-        
+
         // Iterate through each reading
         for (let reading of dev.readings) {
+            device.console.log(`[${device.nativeId}] API:`, reading.metric, reading);
+
             switch (reading.metric) {
                 case "battery":
                     device.batteryLevel = reading.battery.percentage;
