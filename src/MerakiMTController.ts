@@ -189,6 +189,8 @@ export default class MerakiMTController extends ScryptedDeviceBase
         this.devices.set(device.nativeId, providerDevice);
       }
     });
+
+    await this.refresh(undefined, false);
   }
 
   getDevice(nativeId: string) {
