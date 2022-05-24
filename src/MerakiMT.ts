@@ -12,6 +12,7 @@ import {
   VOCSensor,
   AirQuality,
   CO2Sensor,
+  Refresh,
 } from '@scrypted/sdk';
 import { AsyncMqttClient } from 'async-mqtt';
 // eslint-disable-next-line import/no-unresolved, import/extensions
@@ -20,7 +21,7 @@ import MerakiMTController from './MerakiMTController';
 const MQTT = require('async-mqtt');
 
 export default class MerakiMT extends ScryptedDeviceBase
-  implements Battery, HumiditySensor, Thermometer, FloodSensor, BinarySensor,
+  implements Refresh, Battery, HumiditySensor, Thermometer, FloodSensor, BinarySensor,
   AirQualitySensor, PM25Sensor, VOCSensor, CO2Sensor {
   device: any;
 
@@ -72,6 +73,14 @@ export default class MerakiMT extends ScryptedDeviceBase
 
       await this.mqtt.subscribe(`meraki/v1/mt/${this.provider.storage.getItem('network_id')}/ble/${this.mac.toUpperCase()}/+`);
     });
+  }
+
+  async getRefreshFrequency(): Promise<number> {
+    return this.provider.getRefreshFrequency();
+  }
+
+  async refresh(refreshInterface: string, userInitiated: boolean): Promise<void> {
+    return this.provider.refresh(refreshInterface, userInitiated);
   }
 
   setTemperatureUnit(temperatureUnit: TemperatureUnit): Promise<void> {

@@ -19,7 +19,8 @@
       "type": "DeviceProvider",
       "interfaces": [
          "DeviceProvider",
-         "Settings"
+         "Settings",
+         "Refresh"
       ]
    },
    "dependencies": {
