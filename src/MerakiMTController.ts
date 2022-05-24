@@ -70,6 +70,9 @@ export default class MerakiMTController extends ScryptedDeviceBase
           case 'pm25':
             device.pm25Density = reading.pm25.concentration;
             break;
+          case 'co2':
+            device.co2ppm = reading.co2.concentration;
+            break;
           default:
             break;
         }
@@ -149,6 +152,7 @@ export default class MerakiMTController extends ScryptedDeviceBase
       if (dev.sensor.metrics.includes('indoorAirQuality')) interfaces.push(ScryptedInterface.AirQualitySensor);
       if (dev.sensor.metrics.includes('pm25')) interfaces.push(ScryptedInterface.PM25Sensor);
       if (dev.sensor.metrics.includes('tvoc')) interfaces.push(ScryptedInterface.VOCSensor);
+      if (dev.sensor.metrics.includes('co2')) interfaces.push(ScryptedInterface.CO2Sensor);
 
       // Do not create devices if no interfaces are supported
       if (interfaces.length === 0) {

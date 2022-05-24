@@ -11,6 +11,7 @@ import {
   PM25Sensor,
   VOCSensor,
   AirQuality,
+  CO2Sensor,
 } from '@scrypted/sdk';
 import { AsyncMqttClient } from 'async-mqtt';
 // eslint-disable-next-line import/no-unresolved, import/extensions
@@ -20,7 +21,7 @@ const MQTT = require('async-mqtt');
 
 export default class MerakiMT extends ScryptedDeviceBase
   implements Battery, HumiditySensor, Thermometer, FloodSensor, BinarySensor,
-  AirQualitySensor, PM25Sensor, VOCSensor {
+  AirQualitySensor, PM25Sensor, VOCSensor, CO2Sensor {
   device: any;
 
   provider: MerakiMTController;
