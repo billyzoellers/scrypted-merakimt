@@ -1,6 +1,6 @@
 {
    "name": "@scrypted/merakimt",
-   "version": "0.0.2",
+   "version": "0.0.3",
    "description": "Meraki MT (Sensors) plugin for Scrypted",
    "Author": "Billy Zoellers",
    "License": "Apache",
